@@ -1,0 +1,32 @@
+{
+  "name": "quickping-realtime",
+  "version": "1.0.0",
+  "description": "A simple realtime chat app built with Express and Socket.IO",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "chat",
+    "socket.io",
+    "express",
+    "realtime",
+    "cursor"
+  ],
+  "author": "Saniya Maniyar",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "fund": "^1.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "npm": "^10.9.4",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

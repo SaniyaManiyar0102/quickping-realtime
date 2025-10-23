@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QuickPing Realtime</title>
+  <style>
+    * { box-sizing: border-box; }
+    
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      margin: 0; 
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+      height: 100vh;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr auto;
+      grid-template-areas:
+        "header"
+        "main"
+        "footer";
+    }
+
+    .main-content {
+      grid-area: main;
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      overflow: hidden;
+    }
+
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header { 
+      grid-area: header;
+      padding: 20px 24px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    h1 { 
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    .room-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+      margin-top: 4px;
+    }
+
+    .change-room-btn {
+      background: rgba(148, 163, 184, 0.2);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .change-room-btn:hover {
+      background: rgba(148, 163, 184, 0.3);
+      color: #e2e8f0;
+    }
+
+    .leave-room-btn {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #f87171;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-left: 6px;
+    }
+
+    .leave-room-btn:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 20px;
+      padding: 32px;
+      width: 90%;
+      max-width: 450px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal h2 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .modal p {
+      margin: 0 0 24px 0;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .modal-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .modal-input-group label {
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .modal-input-group input {
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(30, 41, 59, 0.6);
+      color: #e2e8f0;
+      font-size: 15px;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .modal-input-group input:focus {
+      border-color: #667eea;
+      background: rgba(30, 41, 59, 0.8);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .popular-rooms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .room-chip {
+      padding: 8px 14px;
+      background: rgba(102, 126, 234, 0.2);
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      border-radius: 20px;
+      color: #a78bfa;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .room-chip:hover {
+      background: rgba(102, 126, 234, 0.3);
+      border-color: rgba(102, 126, 234, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .modal-btn {
+      padding: 14px 24px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .modal-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+
+    .modal-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+      transition: all 0.3s ease;
+    }
+
+    .connection-status.disconnected {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    #log-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    #log-container::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #log-container::-webkit-scrollbar-track {
+      background: rgba(30, 41, 59, 0.5);
+    }
+
+    #log-container::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 4px;
+    }
+
+    #log-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.5);
+    }
+
+    .msg {
+      display: flex;
+      gap: 12px;
+      animation: slideIn 0.3s ease-out;
+      max-width: 80%;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .msg.own {
+      margin-left: auto;
+      flex-direction: row-reverse;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 16px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .msg.own .avatar {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .msg-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 100%;
+    }
+
+    .msg-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .msg.own .msg-header {
+      flex-direction: row-reverse;
+    }
+
+    .username {
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    .msg.own .username {
+      color: #f5a4b7;
+    }
+
+    .timestamp {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .msg-bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      background: rgba(51, 65, 85, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      color: #e2e8f0;
+      word-wrap: break-word;
+      line-height: 1.5;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .msg.own .msg-bubble {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-color: rgba(102, 126, 234, 0.3);
+      color: white;
+    }
+
+    .system-msg {
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+      padding: 8px 16px;
+      background: rgba(51, 65, 85, 0.3);
+      border-radius: 12px;
+      margin: 0 auto;
+      max-width: fit-content;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .typing-container {
+      padding: 8px 24px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .typing {
+      font-size: 13px;
+      color: #94a3b8;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .typing-dots {
+      display: inline-flex;
+      gap: 4px;
+    }
+
+    .typing-dots span {
+      width: 4px;
+      height: 4px;
+      background: #94a3b8;
+      border-radius: 50%;
+      animation: typingDot 1.4s infinite;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typingDot {
+      0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+      30% { opacity: 1; transform: translateY(-4px); }
+    }
+
+    .input-container {
+      grid-area: footer;
+      padding: 16px 24px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    /* User Sidebar */
+    .user-sidebar {
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 1px solid rgba(148, 163, 184, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .sidebar-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .user-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(102, 126, 234, 0.2);
+      color: #a78bfa;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-left: auto;
+    }
+
+    .users-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .users-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .users-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .users-list::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.2);
+      border-radius: 3px;
+    }
+
+    .user-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(30, 41, 59, 0.4);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 10px;
+      transition: all 0.2s ease;
+      animation: slideInRight 0.3s ease-out;
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .user-item.you {
+      background: rgba(102, 126, 234, 0.15);
+      border-color: rgba(102, 126, 234, 0.3);
+    }
+
+    .user-item:hover {
+      background: rgba(30, 41, 59, 0.6);
+    }
+
+    .user-avatar-small {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .user-item.you .user-avatar-small {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .user-name {
+      flex: 1;
+      font-size: 14px;
+      color: #e2e8f0;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .you-badge {
+      font-size: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    #form {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .input-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .input-label {
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 500;
+      padding-left: 4px;
+    }
+
+    input {
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(30, 41, 59, 0.6);
+      color: #e2e8f0;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #667eea;
+      background: rgba(30, 41, 59, 0.8);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    input::placeholder {
+      color: #64748b;
+    }
+
+    #name {
+      width: 180px;
+    }
+
+    button {
+      padding: 12px 24px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      flex-shrink: 0;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+
+      .user-sidebar {
+        display: none;
+      }
+
+      header {
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      #log-container {
+        padding: 16px;
+      }
+
+      .msg {
+        max-width: 90%;
+      }
+
+      #form {
+        flex-wrap: wrap;
+      }
+
+      #name {
+        width: 100%;
+      }
+
+      .input-wrapper {
+        width: 100%;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Room Join Modal -->
+  <div class="modal-overlay" id="room-modal">
+    <div class="modal">
+      <h2>🚪 Join a Room</h2>
+      <p>Enter your name and choose a room to start chatting</p>
+      
+      <form class="modal-form" id="room-form">
+        <div class="modal-input-group">
+          <label for="modal-name">Your Name</label>
+          <input id="modal-name" placeholder="e.g., Saniya" autocomplete="name" required />
+        </div>
+        
+        <div class="modal-input-group">
+          <label for="modal-room">Room Name</label>
+          <input id="modal-room" placeholder="e.g., general, random, tech..." required />
+          <div class="popular-rooms">
+            <span class="room-chip" data-room="general">🌍 general</span>
+            <span class="room-chip" data-room="random">🎲 random</span>
+            <span class="room-chip" data-room="tech">💻 tech</span>
+            <span class="room-chip" data-room="gaming">🎮 gaming</span>
+          </div>
+        </div>
+        
+        <button type="submit" class="modal-btn">Join Room 🚀</button>
+      </form>
+    </div>
+  </div>
+
+  <header>
+    <div class="header-left">
+      <h1>
+        💬 QuickPing
+      </h1>
+      <div class="subtitle">
+        <span id="room-info">Realtime chat built in Cursor</span>
+      </div>
+    </div>
+    <div class="connection-status" id="status">
+      <span class="status-dot"></span>
+      <span id="status-text">Connecting...</span>
+    </div>
+  </header>
+
+  <div class="main-content">
+    <div class="chat-area">
+      <div id="log-container">
+  <div id="log"></div>
+      </div>
+
+      <div class="typing-container">
+  <div class="typing" id="typing"></div>
+      </div>
+    </div>
+
+    <div class="user-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">
+          👥 Users in Room
+          <span class="user-count" id="user-count">0</span>
+        </div>
+      </div>
+      <div class="users-list" id="users-list">
+        <!-- Users will be dynamically added here -->
+      </div>
+    </div>
+  </div>
+
+  <div class="input-container">
+    <form id="form">
+      <div class="input-wrapper" style="width: 180px;">
+        <label class="input-label" for="name">Your name</label>
+        <input id="name" placeholder="e.g., Saniya" autocomplete="name" />
+      </div>
+      <div class="input-wrapper">
+        <label class="input-label" for="text">Message</label>
+        <input id="text" placeholder="Type your message..." autocomplete="off" />
+      </div>
+      <button type="submit" id="send-btn">Send 📤</button>
+    </form>
+  </div>
+
+  <!-- Socket.IO client served by server -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const log = document.getElementById("log");
+    const typing = document.getElementById("typing");
+    const form = document.getElementById("form");
+    const nameEl = document.getElementById("name");
+    const textEl = document.getElementById("text");
+    const sendBtn = document.getElementById("send-btn");
+    const statusEl = document.getElementById("status");
+    const statusText = document.getElementById("status-text");
+    const roomModal = document.getElementById("room-modal");
+    const roomForm = document.getElementById("room-form");
+    const modalNameEl = document.getElementById("modal-name");
+    const modalRoomEl = document.getElementById("modal-room");
+    const roomInfo = document.getElementById("room-info");
+    const usersList = document.getElementById("users-list");
+    const userCount = document.getElementById("user-count");
+    
+    let mySocketId = null;
+    let currentRoom = null;
+    let currentUser = null;
+
+    // Load saved username and room
+    const savedName = localStorage.getItem("quickping-username");
+    const savedRoom = localStorage.getItem("quickping-room");
+    
+    if (savedName) {
+      modalNameEl.value = savedName;
+      nameEl.value = savedName;
+    }
+    
+    if (savedRoom) {
+      modalRoomEl.value = savedRoom;
+    }
+
+    // Room chip selection
+    document.querySelectorAll(".room-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        modalRoomEl.value = chip.dataset.room;
+        modalRoomEl.focus();
+      });
+    });
+
+    // Room form submission
+    roomForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = modalNameEl.value.trim();
+      const room = modalRoomEl.value.trim().toLowerCase();
+      
+      if (!name || !room) return;
+      
+      currentUser = name;
+      currentRoom = room;
+      
+      // Save to localStorage
+      localStorage.setItem("quickping-username", name);
+      localStorage.setItem("quickping-room", room);
+      
+      // Update form inputs
+      nameEl.value = name;
+      
+      // Join the room
+      socket.emit("room:join", { room, user: name });
+      
+      // Hide modal
+      roomModal.classList.add("hidden");
+      
+      // Focus on message input
+      textEl.focus();
+    });
+
+    function getInitials(name) {
+      if (!name) return "?";
+      const parts = name.split(" ");
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
+    }
+
+    function scrollToBottom() {
+      const container = document.getElementById("log-container");
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function addMessage(user, text, time, isOwn = false) {
+      const div = document.createElement("div");
+      div.className = `msg ${isOwn ? "own" : ""}`;
+      
+      const initials = getInitials(user);
+      const formattedTime = new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      div.innerHTML = `
+        <div class="avatar">${initials}</div>
+        <div class="msg-content">
+          <div class="msg-header">
+            <span class="username">${user}</span>
+            <span class="timestamp">${formattedTime}</span>
+          </div>
+          <div class="msg-bubble">${escapeHtml(text)}</div>
+        </div>
+      `;
+      
+      log.appendChild(div);
+      scrollToBottom();
+    }
+
+    function addSystemMessage(msg) {
+      const div = document.createElement("div");
+      div.className = "system-msg";
+      div.textContent = msg;
+      log.appendChild(div);
+      scrollToBottom();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function updateUsersList(users) {
+      usersList.innerHTML = "";
+      userCount.textContent = users.length;
+      
+      users.forEach(user => {
+        const isMe = user.id === mySocketId;
+        const initials = getInitials(user.user);
+        
+        const userItem = document.createElement("div");
+        userItem.className = `user-item ${isMe ? "you" : ""}`;
+        userItem.innerHTML = `
+          <div class="user-avatar-small">${initials}</div>
+          <div class="user-name">${escapeHtml(user.user)}</div>
+          ${isMe ? '<span class="you-badge">YOU</span>' : ''}
+        `;
+        
+        usersList.appendChild(userItem);
+      });
+    }
+
+    // Connection status
+    socket.on("connect", () => {
+      mySocketId = socket.id;
+      statusEl.classList.remove("disconnected");
+      statusText.textContent = "Connected";
+      
+      // Re-join room if reconnecting
+      if (currentRoom && currentUser) {
+        socket.emit("room:join", { room: currentRoom, user: currentUser });
+      }
+    });
+
+    socket.on("disconnect", () => {
+      statusEl.classList.add("disconnected");
+      statusText.textContent = "Disconnected";
+      addSystemMessage("❌ Disconnected from server");
+    });
+
+    // Room joined confirmation
+    socket.on("room:joined", ({ room, users }) => {
+      log.innerHTML = ""; // Clear previous messages
+      roomInfo.innerHTML = `
+        Room: <span class="room-badge">🚪 ${room}</span>
+        <button class="change-room-btn" onclick="changeRoom()">Change Room</button>
+        <button class="leave-room-btn" onclick="leaveRoom()">Leave Room</button>
+      `;
+      addSystemMessage(`✅ You joined room: ${room}`);
+      if (users) {
+        updateUsersList(users);
+      }
+    });
+
+    // User list updates
+    socket.on("room:users", (users) => {
+      updateUsersList(users);
+    });
+
+    // Room left confirmation
+    socket.on("room:left", () => {
+      currentRoom = null;
+      roomInfo.innerHTML = "Realtime chat built in Cursor";
+      usersList.innerHTML = "";
+      userCount.textContent = "0";
+      log.innerHTML = "";
+      roomModal.classList.remove("hidden");
+      addSystemMessage("👋 You left the room");
+    });
+
+    // System events
+    socket.on("system", (msg) => addSystemMessage(msg));
+
+    // Chat messages
+    socket.on("chat:message", ({ user, text, ts, id }) => {
+      const isOwn = id === mySocketId;
+      const displayUser = user || "Anonymous";
+      addMessage(displayUser, text, ts || Date.now(), isOwn);
+    });
+
+    // Typing indicator
+    socket.on("chat:typing", (user) => {
+      typing.innerHTML = `
+        ${user} is typing
+        <span class="typing-dots">
+          <span></span><span></span><span></span>
+        </span>
+      `;
+      clearTimeout(window.__typingTimeout);
+      window.__typingTimeout = setTimeout(() => {
+        typing.innerHTML = "";
+      }, 1000);
+    });
+
+    let typingTimeout;
+    textEl.addEventListener("input", () => {
+      const user = nameEl.value.trim() || "Anonymous";
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        socket.emit("chat:typing", user);
+      }, 100);
+    });
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      
+      if (!currentRoom) {
+        addSystemMessage("⚠️ Please join a room first");
+        return;
+      }
+      
+      const user = nameEl.value.trim() || currentUser || "Anonymous";
+      const text = textEl.value.trim();
+      
+      if (!text) return;
+      
+      // Disable button briefly to prevent double-send
+      sendBtn.disabled = true;
+      setTimeout(() => {
+        sendBtn.disabled = false;
+      }, 300);
+      
+      socket.emit("chat:message", { user, text, room: currentRoom });
+      textEl.value = "";
+      textEl.focus();
+    });
+
+    // Change room function
+    window.changeRoom = () => {
+      roomModal.classList.remove("hidden");
+      modalNameEl.value = currentUser || "";
+      modalRoomEl.value = "";
+      modalRoomEl.focus();
+    };
+
+    // Leave room function
+    window.leaveRoom = () => {
+      if (currentRoom) {
+        socket.emit("room:leave");
+      }
+    };
+
+    // Auto-focus on room input on load
+    modalNameEl.focus();
+  </script>
+</body>
+</html>
