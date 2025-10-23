@@ -5,7 +5,6 @@
 <div align="center">
 
 ![Node.js](https://img.shields.io/badge/node-%3E%3D14.0.0-brightgreen)
-![License](https://img.shields.io/badge/license-MIT-blue)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8.1-black)
 
 [✨ Features](#-features) • [🚀 Quick Start](#-quick-start) • [📖 How to Use](#-how-to-use) • [🛠️ Tech Stack](#️-tech-stack)
